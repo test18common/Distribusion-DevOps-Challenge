@@ -35,19 +35,21 @@ Retrieve the Grafana admin password:
 ```sh
 kubectl get secret --namespace monitoring grafana -o jsonpath="{.data.admin-password}" | base64 --decode ; echo
 ```
-Expose Grafana service using k8s port-forward method
-```sh
-kubectl port-forward svc/grafana 3000:80 -n monitoring
+Expose Grafana service using k8s ingress method
+ ```sh
+ kubectl apply -f ingress-grafana.yml
 ```
+
+
 
 ## 4. Configure Grafana
 
 ### Add Prometheus as a Data Source
 In Grafana, configure Prometheus as the data source.
 
-### Import JVM Metrics Dashboard
-To monitor JVM metrics, import Dashboard ID **4701** from Grafana:
-🔗 [JVM Micrometer Dashboard](https://grafana.com/grafana/dashboards/4701-jvm-micrometer/)
+### Import K8s Metrics Dashboard
+To monitor k8s resources, import Dashboard ID **4701** from Grafana:
+🔗 [ K8s Dashboard](https://grafana.com/grafana/dashboards/4701-jvm-micrometer/)
 
 ## Create Ingress Resource
 
