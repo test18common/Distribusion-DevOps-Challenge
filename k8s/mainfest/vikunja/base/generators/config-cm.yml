@@ -1,0 +1,8 @@
+---
+apiVersion: builtin
+kind: ConfigMapGenerator
+metadata:
+  name: vikunja-api-config
+behavior: create
+files:
+  - configs/config.yml

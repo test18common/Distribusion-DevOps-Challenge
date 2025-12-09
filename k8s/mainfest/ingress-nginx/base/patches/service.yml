@@ -1,0 +1,17 @@
+---
+# K8s annotations https://kubernetes-sigs.github.io/aws-load-balancer-controller/v2.3/guide/service/annotations/
+# Nginx annotations https://kubernetes.github.io/ingress-nginx/user-guide/nginx-configuration/annotations/
+# Nginx hardening guide https://kubernetes.github.io/ingress-nginx/deploy/hardening-guide/
+apiVersion: v1
+kind: Service
+metadata:
+  annotations:
+    prometheus.io/scrape: "true"
+    prometheus.io/port: "10254"
+    prometheus.io/path: "/metrics"
+  name: ingress-nginx-controller
+  namespace: ingress-nginx
+spec:
+  # For the client IP detection we have to activate the proxy protocol. This is only possible if the creation of the NLB is handled by the
+  # AWS load balancer controller. This allows us to change the traffic policy from local to cluster and thus achieve higher reliability.
+  externalTrafficPolicy: Cluster

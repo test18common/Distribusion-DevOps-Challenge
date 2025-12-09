@@ -1,0 +1,38 @@
+---
+# Source: vikunja/templates/typesense.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: vikunja-typesense
+spec:
+  revisionHistoryLimit: 3
+  replicas: 1
+  template:
+    spec:
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+              - matchExpressions:
+                  - key: tier
+                    operator: In
+                    values:
+                      - apps
+                  - key: kubernetes.io/arch
+                    operator: In
+                    values:
+                      - arm64
+      containers:
+        - name: vikunja-typesense
+          env:
+            - name: TYPESENSE_API_KEY
+              value: typesense
+            - name: TYPESENSE_DATA_DIR
+              value: /data
+      topologySpreadConstraints:
+        - maxSkew: 1
+          topologyKey: kubernetes.io/hostname
+          whenUnsatisfiable: DoNotSchedule
+          labelSelector:
+            matchLabels:
+              app.kubernetes.io/name: typesense

@@ -1,0 +1,274 @@
+---
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  name: vikunja-typesense-data
+  labels:
+    app.kubernetes.io/instance: vikunja
+    app.kubernetes.io/name: typesense
+    app.kubernetes.io/version: 0.24.6
+spec:
+  accessModes:
+    - "ReadWriteOnce"
+  storageClassName: standard
+  resources:
+    requests:
+      storage: "1Gi"
+---
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  name: vikunja-data
+  labels:
+    app.kubernetes.io/instance: vikunja
+    app.kubernetes.io/name: vikunja
+    app.kubernetes.io/version: 0.24.6
+  annotations: []
+spec:
+  accessModes:
+    - "ReadWriteOnce"
+  storageClassName: standard
+  resources:
+    requests:
+      storage: "2Gi"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: vikunja-typesense
+  labels:
+    app.kubernetes.io/service: vikunja-typesense
+    app.kubernetes.io/instance: vikunja
+    app.kubernetes.io/name: typesense
+    app.kubernetes.io/version: 0.24.6
+  annotations:
+spec:
+  type: ClusterIP
+  ports:
+    - port: 8108
+      targetPort: http
+      protocol: TCP
+      name: http
+  selector:
+    app.kubernetes.io/instance: vikunja
+    app.kubernetes.io/name: typesense
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: vikunja
+  labels:
+    app.kubernetes.io/service: vikunja
+    app.kubernetes.io/instance: vikunja
+    app.kubernetes.io/name: vikunja
+    app.kubernetes.io/version: 0.24.6
+  annotations:
+spec:
+  type: ClusterIP
+  ports:
+    - port: 3456
+      targetPort: http
+      protocol: TCP
+      name: http
+  selector:
+    app.kubernetes.io/instance: vikunja
+    app.kubernetes.io/name: vikunja
+  sessionAffinity: ClientIP
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: vikunja-typesense
+  labels:
+    app.kubernetes.io/instance: vikunja
+    app.kubernetes.io/name: typesense
+    app.kubernetes.io/version: 0.24.6
+spec:
+  revisionHistoryLimit: 3
+  replicas: 1
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 1
+      maxSurge: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: typesense
+      app.kubernetes.io/instance: vikunja
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: typesense
+        app.kubernetes.io/instance: vikunja
+    spec:
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+              - matchExpressions:
+                  - key: tier
+                    operator: In
+                    values:
+                      - apps
+      serviceAccountName: default
+      automountServiceAccountToken: true
+      dnsPolicy: ClusterFirst
+      enableServiceLinks: true
+      containers:
+        - name: vikunja-typesense
+          image: docker.io/typesense/typesense:0.25.1
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: TYPESENSE_API_KEY
+              value: typesense
+            - name: TYPESENSE_DATA_DIR
+              value: /data
+          ports:
+            - name: http
+              containerPort: 8108
+              protocol: TCP
+          volumeMounts:
+            - name: data
+              mountPath: /data
+          livenessProbe:
+            failureThreshold: 3
+            httpGet:
+              path: /health
+              port: http
+            initialDelaySeconds: 0
+            periodSeconds: 10
+            timeoutSeconds: 1
+          readinessProbe:
+            failureThreshold: 3
+            httpGet:
+              path: /health
+              port: http
+            initialDelaySeconds: 0
+            periodSeconds: 10
+            timeoutSeconds: 1
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: vikunja-typesense-data
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: vikunja
+  labels:
+    app.kubernetes.io/instance: vikunja
+    app.kubernetes.io/name: vikunja
+    app.kubernetes.io/version: 0.24.6
+spec:
+  revisionHistoryLimit: 3
+  replicas: 1
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 1
+      maxSurge: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: vikunja
+      app.kubernetes.io/instance: vikunja
+  template:
+    metadata:
+      annotations:
+        checksum/config: b8facb7779e5c00248bbb22e528d8ca69b45cdc0aa22c66e251a07f4a0964f2b
+      labels:
+        app.kubernetes.io/name: vikunja
+        app.kubernetes.io/instance: vikunja
+    spec:
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+              - matchExpressions:
+                  - key: tier
+                    operator: In
+                    values:
+                      - apps
+      serviceAccountName: default
+      automountServiceAccountToken: true
+      securityContext:
+        fsGroup: 1000
+      dnsPolicy: ClusterFirst
+      enableServiceLinks: false
+      containers:
+        - name: vikunja
+          image: vikunja/vikunja:0.24.6
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: VIKUNJA_DATABASE_DATABASE
+              value: db_database
+            - name: VIKUNJA_DATABASE_HOST
+              value: db_host
+            - name: VIKUNJA_DATABASE_NAME
+              value: db_name
+            - name: VIKUNJA_DATABASE_PASSWORD
+              value: db_password
+            - name: VIKUNJA_DATABASE_TYPE
+              value: db_type
+            - name: VIKUNJA_DATABASE_USER
+              value: db_username
+            - name: VIKUNJA_TYPESENSE_ENABLED
+              value: "true"
+          ports:
+            - name: http
+              containerPort: 3456
+              protocol: TCP
+          volumeMounts:
+            - name: config
+              mountPath: /etc/vikunja/config.yml
+              subPath: config.yml
+            - name: data
+              mountPath: /app/vikunja/files
+          livenessProbe:
+            failureThreshold: 3
+            httpGet:
+              path: /api/v1/info
+              port: http
+            initialDelaySeconds: 0
+            periodSeconds: 10
+            timeoutSeconds: 1
+          readinessProbe:
+            failureThreshold: 3
+            httpGet:
+              path: /api/v1/info
+              port: http
+            initialDelaySeconds: 0
+            periodSeconds: 10
+            timeoutSeconds: 1
+      volumes:
+        - name: config
+          configMap:
+            name: vikunja-api-config
+        - name: data
+          persistentVolumeClaim:
+            claimName: vikunja-data
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: vikunja
+  labels:
+    app.kubernetes.io/instance: vikunja
+    app.kubernetes.io/name: vikunja
+    app.kubernetes.io/version: 0.24.6
+  annotations:
+    nginx.ingress.kubernetes.io/proxy-body-size: "0"
+    nginx.ingress.kubernetes.io/ssl-redirect: "false"
+spec:
+  ingressClassName: nginx
+  rules:
+    - host: "demo.local"
+      http:
+        paths:
+          - path: "/"
+            pathType: Prefix
+            backend:
+              service:
+                name: vikunja
+                port:
+                  number: 3456
+

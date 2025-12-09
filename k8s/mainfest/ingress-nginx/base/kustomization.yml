@@ -1,0 +1,36 @@
+---
+# https://kubectl.docs.kubernetes.io/references/kustomize/kustomization/
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+# Add labels and selectors to all resources. If the label key already is present
+# on the resource, the value will be overridden.
+labels:
+  - includeSelectors: true
+    fields:
+      - create: true
+        kind: Deployment
+        path: spec/template/spec/topologySpreadConstraints/labelSelector/matchLabels
+    pairs:
+      app.kubernetes.io/instance: controller
+      app.kubernetes.io/name: controller
+  - includeSelectors: false
+    pairs:
+      app.kubernetes.io/version: '1.14.1'
+
+# Adds namespace to all resources. Will override the existing namespace if it
+# is set on a resource, or add it if it is not set on a resource.
+namespace: ingress-nginx
+
+# Patches can be applied to resources that have already been defined. This allows environment-specific
+# deviations from the basic setup to be adapted or overwritten in the overlays.
+# see https://kubernetes.io/docs/tasks/manage-kubernetes-objects/kustomization/#customizing
+patches:
+  - path: patches/deployment.yml
+  # - path: patches/job-admission-create.yml
+  # - path: patches/job-admission-patch.yml
+  - path: patches/namespace.yml
+  - path: patches/service.yml
+
+resources:
+  - resources/ingress-nginx-1.14.1.yaml

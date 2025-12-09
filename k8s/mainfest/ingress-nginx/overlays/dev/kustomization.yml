@@ -1,0 +1,24 @@
+---
+# https://kubectl.docs.kubernetes.io/references/kustomize/kustomization/
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+
+# Adds namespace to all resources. Will override the existing namespace if it
+# is set on a resource, or add it if it is not set on a resource.
+namespace: ingress-nginx
+
+# Patches can be applied to resources that have already been defined. This allows environment-specific
+# deviations from the basic setup to be adapted or overwritten in the overlays.
+# see https://kubernetes.io/docs/tasks/manage-kubernetes-objects/kustomization/#customizing
+patches: []
+
+# Replicas modified the number of replicas for a resource. As this declaration
+# does not take in a kind: nor a group: it will match any group and kind that
+# has a matching name and that is one of: Deployment, ReplicaSet, StatefulSet
+replicas:
+  - name: ingress-nginx-controller
+    count: 2
+
+resources:
+  - ../../base/

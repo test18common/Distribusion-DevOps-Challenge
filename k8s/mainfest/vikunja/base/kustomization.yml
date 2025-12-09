@@ -1,0 +1,30 @@
+---
+# https://kubectl.docs.kubernetes.io/references/kustomize/kustomization/
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+# Adds namespace to all resources. Will override the existing namespace if it
+# is set on a resource, or add it if it is not set on a resource.
+namespace: vikunja
+
+# There are two different ways of defining ConfigMaps and Secrets. Directly as a kustomization.yml property
+# or as a generator. The range of functions is identical. We only use generator so that it is immediately
+# obvious to every developer that it is a generator and the implementation is homogeneous across the project.
+# see https://kubectl.docs.kubernetes.io/references/kustomize/builtins/
+generators:
+  - generators/config-cm.yml
+
+# Add labels and selectors to all resources. If the label key already is present
+# on the resource, the value will be overridden.
+labels: []
+
+# Patches can be applied to resources that have already been defined. This allows environment-specific
+# deviations from the basic setup to be adapted or overwritten in the overlays.
+# see https://kubernetes.io/docs/tasks/manage-kubernetes-objects/kustomization/#customizing
+patches:
+  - path: patches/service-typesense.yml
+  - path: patches/service-vikunja.yml
+
+resources:
+  - resources/app.yml
+  - resources/namespace.yml

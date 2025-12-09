@@ -1,0 +1,30 @@
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: ingress-nginx-admission-create
+  namespace: ingress-nginx
+spec:
+  template:
+    spec:
+      containers:
+        - name: create
+          resources:
+            limits:
+              memory: 32Mi
+            requests:
+              cpu: 50m
+              memory: 32Mi
+      dnsConfig:
+        options:
+          - name: ndots
+            value: '2'
+          - name: attempts
+            value: '3'
+      securityContext:
+        fsGroup: 65532
+        runAsGroup: 65532
+        runAsNonRoot: true
+        runAsUser: 65532
+        seccompProfile:
+          type: RuntimeDefault

@@ -1,0 +1,10 @@
+typesense:
+  # These configuration values will automatically apply
+  # if the integrated Typesense is enabled below (typesense.enabled)
+  url: "http://vikunja-typesense:8108"
+  apiKey: "typesense"
+redis:
+  # These configuration values will automatically apply
+  # if the integrated Redis is enabled below (redis.enabled)
+  host: "vikunja-redis-master:6379"
+  db: "vikunja"

@@ -1,0 +1,52 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: vikunja
+spec:
+  revisionHistoryLimit: 3
+  replicas: 2
+  template:
+    spec:
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+              - matchExpressions:
+                  - key: tier
+                    operator: In
+                    values:
+                      - apps
+                  - key: kubernetes.io/arch
+                    operator: In
+                    values:
+                      - arm64
+        # podAntiAffinity:
+        #   requiredDuringSchedulingIgnoredDuringExecution:
+        #     - labelSelector:
+        #         matchLabels:
+        #           app.kubernetes.io/name: vikunja
+        #       topologyKey: "kubernetes.io/hostname"
+      containers:
+        - name: vikunja
+          env:
+            - name: VIKUNJA_DATABASE_DATABASE
+              value: vikunja
+            - name: VIKUNJA_DATABASE_HOST
+              value: vikunja-postgresql.vikunja.svc.cluster.local:5432
+            - name: VIKUNJA_DATABASE_NAME
+              value: vikunja
+            - name: VIKUNJA_DATABASE_PASSWORD
+              value: vikunja
+            - name: VIKUNJA_DATABASE_TYPE
+              value: postgres
+            - name: VIKUNJA_DATABASE_USER
+              value: vikunja
+            - name: VIKUNJA_TYPESENSE_ENABLED
+              value: "true"
+        - maxSkew: 1
+          topologyKey: kubernetes.io/hostname
+          whenUnsatisfiable: DoNotSchedule
+          labelSelector:
+            matchLabels:
+              app.kubernetes.io/name: vikunja

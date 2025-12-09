@@ -1,0 +1,9 @@
+---
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  name: vikunja-data
+spec:
+  resources:
+    requests:
+      storage: "2Gi"

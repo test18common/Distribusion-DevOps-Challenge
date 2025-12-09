@@ -1,0 +1,8 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: vikunja-typesense
+  annotations:
+    prometheus.io/path: '/metrics'
+    prometheus.io/port: '10254' #todo: change port if needed
+    prometheus.io/scrape: 'true'

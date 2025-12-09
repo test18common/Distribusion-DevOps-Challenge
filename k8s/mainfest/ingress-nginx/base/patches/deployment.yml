@@ -1,0 +1,65 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ingress-nginx-controller
+  namespace: ingress-nginx
+spec:
+  revisionHistoryLimit: 0
+  replicas: 1
+  selector:
+    matchLabels:
+      app: ingress-nginx
+      app.kubernetes.io/component: controller
+  template:
+    metadata:
+      labels:
+        app: ingress-nginx
+        app.kubernetes.io/component: controller
+    spec:
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+              - matchExpressions:
+                  - key: tier
+                    operator: In
+                    values:
+                      - infra
+                  - key: kubernetes.io/arch
+                    operator: In
+                    values:
+                      - arm64
+      containers:
+        - name: controller
+          args:
+            - /nginx-ingress-controller
+          env:
+            - name: GOMAXPROCS
+              value: "1"
+          ports:
+            - name: http
+              containerPort: 80
+            - name: https
+              containerPort: 443
+            - name: metrics
+              containerPort: 10254
+              protocol: TCP
+      dnsConfig:
+        options:
+          - name: ndots
+            value: "2"
+          - name: attempts
+            value: "3"
+      priorityClassName: system-cluster-critical
+      securityContext:
+        runAsNonRoot: true
+        seccompProfile:
+          type: RuntimeDefault
+      topologySpreadConstraints:
+        - maxSkew: 1
+          topologyKey: kubernetes.io/hostname
+          whenUnsatisfiable: DoNotSchedule
+          labelSelector:
+            matchLabels:
+              app.kubernetes.io/component: controller
+

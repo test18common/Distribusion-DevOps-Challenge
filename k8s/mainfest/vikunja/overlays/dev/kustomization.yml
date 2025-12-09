@@ -1,0 +1,29 @@
+---
+# https://kubectl.docs.kubernetes.io/references/kustomize/kustomization/
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+# see https://kubectl.docs.kubernetes.io/guides/config_management/components/
+components:
+  - ../../components/database
+
+# Adds namespace to all resources. Will override the existing namespace if it
+# is set on a resource, or add it if it is not set on a resource.
+namespace: vikunja
+
+# Add labels and selectors to all resources. If the label key already is present
+# on the resource, the value will be overridden.
+labels: []
+
+# Patches can be applied to resources that have already been defined. This allows environment-specific
+# deviations from the basic setup to be adapted or overwritten in the overlays.
+# see https://kubernetes.io/docs/tasks/manage-kubernetes-objects/kustomization/#customizing
+patches:
+  - path: patches/deployment-typesense.yml
+  - path: patches/deployment-vikunja.yml
+  - path: patches/ingress.yml
+  - path: patches/pvc-typescense.yml
+  - path: patches/pvc-vikunja.yml
+
+resources:
+  - ../../base
